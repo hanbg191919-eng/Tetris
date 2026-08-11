@@ -1,0 +1,16 @@
+# 각 팀원이 npm install로 다시 생성하는 의존성
+node_modules/
+
+# 운영체제 및 편집기 임시 파일
+.DS_Store
+*.swp
+*.swo
+
+# 실행 중 생성되는 로그
+*.log
+npm-debug.log*
+
+# 로컬 환경 설정과 비밀값
+.env
+.env.*
+!.env.example
