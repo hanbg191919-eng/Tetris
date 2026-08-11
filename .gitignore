@@ -14,3 +14,10 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+
+# Vite가 자동 생성하지만 더블클릭 실행에는 사용하지 않는 문서
+dist/index.html
+
+# 구현 참고용 원본 문서는 애플리케이션 저장소에 포함하지 않는다.
+*정의서.png
+*명세서.png

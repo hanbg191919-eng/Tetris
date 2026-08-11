@@ -6,6 +6,8 @@ import {
 
 const RANKING_KEY = 'tetris-plus-ranking';
 
+// Font Awesome 클래스명을 짧게 사용하기 위한 공통 아이콘 컴포넌트다.
+// 장식용 아이콘이므로 스크린 리더가 중복해서 읽지 않게 숨긴다.
 function Icon({ name }) {
   return <i className={`fa fa-${name}`} aria-hidden="true" />;
 }
@@ -27,6 +29,8 @@ function Stat({ label, value }) {
   return <div className="stat"><span>{label}</span><strong>{value}</strong></div>;
 }
 
+// 게임 엔진이 만든 2차원 셀 배열을 CSS Grid로 그린다.
+// Board는 규칙을 계산하지 않고 전달받은 결과만 화면에 표시한다.
 function Board({ cells }) {
   return <div className="board" role="grid" aria-label={`${BOARD_WIDTH} x ${BOARD_HEIGHT} 테트리스 게임판`}>
     {cells.flat().map((cell, index) => <span key={index} role="gridcell"
@@ -36,26 +40,39 @@ function Board({ cells }) {
 }
 
 function loadRanking() {
+  // 저장값이 깨졌더라도 첫 화면이 멈추지 않도록 빈 순위표로 복구한다.
   try { return JSON.parse(localStorage.getItem(RANKING_KEY)) ?? []; } catch { return []; }
 }
 
 export default function App() {
+  // 화면 전환은 라우터 대신 간단한 문자열 상태로 관리한다.
+  // 가능한 값: home, playing, paused, gameover, ranking, settings
   const [screen, setScreen] = useState('home');
+
+  // 게임판에는 이미 고정된 블록만, piece에는 현재 움직이는 블록만 저장한다.
+  // 둘을 분리하면 충돌 판정과 고스트 블록 계산이 단순해진다.
   const [board, setBoard] = useState(createBoard);
   const [piece, setPiece] = useState(null);
+
+  // queue는 앞으로 등장할 블록, hold는 사용자가 보관한 블록이다.
   const [queue, setQueue] = useState([]);
   const [hold, setHold] = useState(null);
   const [canHold, setCanHold] = useState(true);
+
   const [score, setScore] = useState(0);
   const [lines, setLines] = useState(0);
   const [nickname, setNickname] = useState('PLAYER');
   const [ranking, setRanking] = useState(loadRanking);
   const [soundOn, setSoundOn] = useState(true);
+
+  // 타이머와 키보드 이벤트는 등록 당시의 오래된 state를 기억할 수 있다.
+  // ref에 매 렌더의 최신 값을 넣어 이벤트에서도 현재 게임 상태를 읽게 한다.
   const stateRef = useRef({});
 
   const level = Math.floor(lines / 10) + 1;
   stateRef.current = { board, piece, queue, hold, canHold, score, lines, level, screen };
 
+  // 큐가 짧아지면 새 7-bag을 뒤에 붙이고 맨 앞 블록을 꺼낸다.
   const takeNext = useCallback((sourceQueue) => {
     let nextQueue = [...sourceQueue];
     if (nextQueue.length < 5) nextQueue.push(...createBag());
@@ -63,6 +80,7 @@ export default function App() {
     return { nextPiece: spawnPiece(type), nextQueue };
   }, []);
 
+  // 새 게임에 필요한 모든 상태를 한 번에 초기화한다.
   const startGame = useCallback(() => {
     const firstBag = createBag();
     const { nextPiece, nextQueue } = takeNext(firstBag);
@@ -70,6 +88,7 @@ export default function App() {
     setHold(null); setCanHold(true); setScore(0); setLines(0); setScreen('playing');
   }, [takeNext]);
 
+  // 최종 기록을 점수순으로 정렬하고 상위 10개만 브라우저에 보관한다.
   const finishGame = useCallback((finalScore, finalLines) => {
     const entry = { name: nickname.trim().slice(0, 8) || 'PLAYER', score: finalScore, lines: finalLines, date: Date.now() };
     const nextRanking = [...loadRanking(), entry].sort((a, b) => b.score - a.score || a.date - b.date).slice(0, 10);
@@ -77,6 +96,8 @@ export default function App() {
     setRanking(nextRanking); setScreen('gameover');
   }, [nickname]);
 
+  // 현재 블록이 더 내려갈 수 없을 때 실행되는 한 턴의 마무리 과정이다.
+  // 블록 고정 → 완성 줄 삭제 → 점수 계산 → 다음 블록 생성 순서로 처리한다.
   const lockPiece = useCallback(() => {
     const current = stateRef.current;
     if (!current.piece) return;
@@ -86,6 +107,7 @@ export default function App() {
     const nextScore = current.score + gained;
     const nextLines = current.lines + result.count;
     const { nextPiece, nextQueue } = takeNext(current.queue);
+    // 다음 블록이 생성 위치부터 겹치면 더 놓을 공간이 없으므로 게임 오버다.
     if (collides(result.board, nextPiece)) {
       setBoard(result.board); setScore(nextScore); setLines(nextLines);
       finishGame(nextScore, nextLines); return;
@@ -94,6 +116,8 @@ export default function App() {
     setScore(nextScore); setLines(nextLines); setCanHold(true);
   }, [finishGame, takeNext]);
 
+  // 충돌하지 않는 경우에만 현재 블록 좌표를 변경한다.
+  // 이동 성공 여부는 소프트 드롭과 자동 낙하가 블록 고정을 결정할 때 사용한다.
   const move = useCallback((dx, dy) => {
     const { board: b, piece: p } = stateRef.current;
     if (!p || collides(b, p, dx, dy)) return false;
@@ -103,6 +127,7 @@ export default function App() {
 
   const drop = useCallback(() => { if (!move(0, 1)) lockPiece(); }, [lockPiece, move]);
 
+  // 가능한 마지막 위치까지 즉시 이동하고 이동 거리만큼 보너스 점수를 준다.
   const hardDrop = useCallback(() => {
     const { board: b, piece: p, score: currentScore } = stateRef.current;
     if (!p) return;
@@ -110,11 +135,14 @@ export default function App() {
     while (!collides(b, p, 0, distance + 1)) distance += 1;
     setPiece({ ...p, y: p.y + distance });
     setScore(currentScore + distance * 2);
+    // React 상태 반영은 비동기이므로 lockPiece가 즉시 최신 값을 읽도록 ref도 갱신한다.
     stateRef.current.piece = { ...p, y: p.y + distance };
     stateRef.current.score = currentScore + distance * 2;
     lockPiece();
   }, [lockPiece]);
 
+  // 회전 후 충돌하면 좌우로 조금씩 옮겨 벽 근처에서도 회전을 시도한다.
+  // 이 배열은 정식 SRS를 단순화한 기본 wall kick 규칙이다.
   const turn = useCallback(() => {
     const { board: b, piece: p } = stateRef.current;
     if (!p) return;
@@ -124,6 +152,7 @@ export default function App() {
     }
   }, []);
 
+  // 한 블록이 바닥에 고정되기 전에는 HOLD를 한 번만 허용한다.
   const holdPiece = useCallback(() => {
     const current = stateRef.current;
     if (!current.piece || !current.canHold) return;
@@ -138,12 +167,14 @@ export default function App() {
     setCanHold(false);
   }, [finishGame, takeNext]);
 
+  // 레벨이 올라갈수록 interval을 줄이되 최소 110ms보다 빨라지지는 않는다.
   useEffect(() => {
     if (screen !== 'playing') return undefined;
     const timer = window.setInterval(drop, Math.max(110, 850 - (level - 1) * 65));
     return () => window.clearInterval(timer);
   }, [drop, level, screen]);
 
+  // 키보드 리스너는 한 번 등록하고, 화면이 바뀌거나 콜백이 바뀌면 정리 후 다시 등록한다.
   useEffect(() => {
     const onKeyDown = (event) => {
       if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' ', 'c', 'C', 'p', 'P', 'Escape'].includes(event.key)) event.preventDefault();
@@ -163,8 +194,13 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [hardDrop, holdPiece, lockPiece, move, screen, turn]);
 
-  const shownBoard = piece ? boardWithPiece(board, piece) : board.map((row) => row.map((type) => type ? { type } : null));
+  // 렌더링할 때만 고정 블록 위에 현재 블록과 고스트 블록을 합성한다.
+  // 실제 board 데이터에는 움직이는 블록을 넣지 않는다.
+  const shownBoard = piece
+    ? boardWithPiece(board, piece)
+    : board.map((row) => row.map((type) => type ? { type } : null));
 
+  // 게임판이 필요 없는 메뉴 계열 화면을 먼저 반환한다.
   if (screen === 'home' || screen === 'ranking' || screen === 'settings') {
     return <main className="shell home-shell">
       <div className="brand"><span className="brand-kicker">ITEM &amp; SKILL</span><h1>TETRIS <em>+</em></h1><p>가장 익숙한 규칙, 더 또렷한 플레이.</p></div>
@@ -188,6 +224,7 @@ export default function App() {
     </main>;
   }
 
+  // playing, paused, gameover는 같은 게임판 위에 상태별 오버레이를 표시한다.
   return <main className="shell game-shell">
     <header className="game-header"><div><span className="brand-kicker">TETRIS +</span><strong>{nickname || 'PLAYER'}</strong></div><button className="icon-button" aria-label={screen === 'paused' ? '게임 계속하기' : '일시정지'} onClick={() => setScreen(screen === 'paused' ? 'playing' : 'paused')}><Icon name={screen === 'paused' ? 'play' : 'pause'} /></button></header>
     <div className="game-layout">

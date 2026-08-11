@@ -19,8 +19,27 @@ npm run build
 
 1. `src/game.js`: React와 무관한 게임 규칙
 2. `src/App.jsx`: 게임 상태, 입력, 타이머, 화면 전환
-3. `src/styles.css`: 명세의 네이비/골드 화면 스타일과 반응형 처리
+3. `src/styles.css`: 흑백 화면 스타일과 반응형 처리
 4. `test/game.test.js`: 핵심 규칙의 자동 검증
+
+## 파일 구성
+
+```text
+├── 테트리스.html          # 서버 없이 더블클릭해서 실행하는 파일
+├── dist/                  # 위 HTML이 읽는 빌드 결과물
+├── src/
+│   ├── App.jsx            # 화면과 게임 상태 관리
+│   ├── game.js            # 충돌, 회전, 줄 삭제 등 게임 규칙
+│   ├── main.jsx           # React 시작 지점
+│   ├── styles.css         # 흑백 UI와 반응형 스타일
+│   └── font-awesome.css   # 사용하는 Font Awesome 4.7 아이콘
+├── test/game.test.js      # 게임 규칙 단위 테스트
+├── index.html             # Vite 개발 서버 시작 문서
+├── vite.config.js         # 로컬 HTML용 빌드 설정
+└── package.json           # 의존성과 실행 명령
+```
+
+`node_modules`와 원본 기획 문서는 실행에 필요하지 않으므로 저장소에서 제외합니다.
 
 ## 상태 흐름
 
