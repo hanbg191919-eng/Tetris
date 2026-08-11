@@ -1,0 +1,31 @@
+/* Font Awesome 4.7.0 — 필요한 아이콘만 포함. Font: SIL OFL 1.1, CSS: MIT */
+@font-face {
+  font-family: 'FontAwesome';
+  src: url('../node_modules/font-awesome/fonts/fontawesome-webfont.woff2?v=4.7.0') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.fa {
+  display: inline-block;
+  font: normal normal normal 14px/1 FontAwesome;
+  font-size: inherit;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.fa-cog::before { content: '\f013'; }
+.fa-repeat::before { content: '\f01e'; }
+.fa-volume-off::before { content: '\f026'; }
+.fa-volume-up::before { content: '\f028'; }
+.fa-play::before { content: '\f04b'; }
+.fa-pause::before { content: '\f04c'; }
+.fa-stop::before { content: '\f04d'; }
+.fa-chevron-left::before { content: '\f053'; }
+.fa-chevron-right::before { content: '\f054'; }
+.fa-arrow-left::before { content: '\f060'; }
+.fa-chevron-down::before { content: '\f078'; }
+.fa-trophy::before { content: '\f091'; }
+.fa-angle-double-down::before { content: '\f103'; }
+.fa-hand-paper-o::before { content: '\f256'; }
