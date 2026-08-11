@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BOARD_HEIGHT, BOARD_WIDTH, clearLines, collides, createBag, createBoard, rotate, scoreFor, spawnPiece } from '../src/game.js';
+import { BOARD_HEIGHT, BOARD_WIDTH, clearLines, collides, createBag, createBoard, rotate, spawnPiece } from '../src/game.js';
 
 test('보드는 10 x 20 빈 칸으로 생성된다', () => {
   const board = createBoard();
@@ -28,8 +28,4 @@ test('완성된 줄을 삭제하고 빈 줄을 위에 채운다', () => {
   const result = clearLines(board);
   assert.equal(result.count, 1);
   assert.ok(result.board[0].every((cell) => cell === null));
-});
-
-test('테트리스 점수는 레벨 배수를 적용한다', () => {
-  assert.equal(scoreFor(4, 3), 2400);
 });
